@@ -1,4 +1,4 @@
-# St Floormat
+# ST Floormat
 
 Full assembler source for the "ST Floormat" demo by The Senior Dads, which was released on the Atari 16 bit platform on the 24th February 1997.
 
