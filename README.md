@@ -20,7 +20,7 @@ Full assembler source for the "ST Floormat" demo by The Senior Dads, which was r
 
 ## Folders
 
-* `COMPILED` - Original compiled demo and accompanying [README](https://github.com/theseniordads/xmascard97/blob/main/COMPILED/FLOORMAT/STFLRMAT.TXT).
+* `COMPILED` - Original compiled demo and accompanying [README](https://github.com/theseniordads/stfloormat/blob/main/COMPILED/FLOORMAT/STFLRMAT.TXT).
 * `GRAPHICS` -
   * Graphics, in Degas Elite `.PI1` files.
   * `MYFONT.DAT`, a plane graphics font, used by the scroller.
