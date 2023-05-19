@@ -19,96 +19,133 @@
  * previous demos were Falcon-only. If you want see the original version of
  * this demo before we re-purposed it, look in the folder 'OLD/'.
 
+ * As you can guess, the coding style is quite different to 'Air Dirt' and
+ * 'Xmas '97', and the like! We'll add in some extra comments. (These are
+ * preceded by a '<-'.)
+
+ * ## Assembly information ##
+ * Assembly format: Devpac 3
+ * Target processor: Motorola 68000
+ * Exectuable format: Atari TOS .PRG
+ * Minimum hardware: Atari STFM with 512K RAM
+
 	opt	d-
 
-	include	includes\genmacro.s
+	include	includes\genmacro.s			; <- General macros (most of them are not used!)
 
 start
-		clr.l	-(sp)
+		clr.l	-(sp)					; <- As we're addressing the hardware, need to go into supervisor mode	
 		move.w	#32,-(sp)
 		trap	#1
 		addq.l	#6,sp
-		move.l	d0,oldstack
+		move.l	d0,oldstack				; <- Save old stack pointer, as we're going to use our own stack.
 		lea	mystack,a7
 		bsr	check_falcon
-		bsr	save_palette
+		bsr	save_palette				; <- Before we start attacking the hardware, we need to save the current state of the hardware, and that starts here on the next couple of lines.
 		bsr	save_mfp
 		bsr	save_screen
 		bsr	save_vectors	
 		bsr	kill_system		
-		bsr	senior_intro
+		bsr	senior_intro				; <- This is the retrofitted intro screen.
 		bsr	draw_pic
-		bsr	set_my_inters
+		bsr	set_my_inters				; <- Startup for the main part of the demo, including the main music.
 
-		bsr	Fear_of_the_dark	; Iron Maiden rule!!!!!!!!!!
-end
+		bsr	Fear_of_the_dark	; Iron Maiden rule!!!!!!!!!! <- This is the main demo loop, which also includes the retrofiiter Senior Dads Crash ending.
+end	; <- Not sure if this label is used anywhere!
 		bsr	restore_palette
 		bsr	restore_mfp
 		bsr	restore_vectors
 		bsr	restore_screen
 		bsr	enable_system
-		move.b	#2,$ff820a
+		move.b	#2,$ff820a	; <- In the demo, you flip the screen 50/60Hz, so we're resetting the frequency back to the default of 50Hz. This was in the days when nearly all Atari colour displays were PAL with 50Hz as default. it probably will cause a bit of a problem if it's run on a Falcon with a VGA display!
 		move.w	#0,$ff8240+6	
-		move.w	#$fff,$ff8240		; fix stupid bug!	
+		move.w	#$fff,$ff8240		; fix stupid bug! <- Dunno what this is about, but this line and the previous one appear to reset a couple of colour registers back to the system default.
 		move.b	#0,$ff820f
-quit
- 		move.l	oldstack,-(sp)
+quit	; <- Not sure if this label is used anywhere either! Maybe it was in an earlier version of the demo.
+ 		move.l	oldstack,-(sp)		; <- Restore the old stack pointer, and exit from supervisor mode.
 		move	#$20,-(sp)
 		trap	#1
 		addq.l	#6,sp
-		clr.l	(sp)
+		clr.l	(sp)				; <- Now we're back in user mode, we can exit the program and return to the desktop. Of course, on occasion, the desktop may look rather wonky!
 		trap	#1
 
-	ds.l	200
-mystack	ds.l	1
+	ds.l	200			; <- Space for our nice big juicy stack! (Remember, stacks grow downwards in memory.)
+mystack	ds.l	1		; <- Start of the stack.
 oldstack
-	ds.l	1
+	ds.l	1			; <- This points to the memory location of stack before we started using our own stack.)
+		even			; <- Note sure why this is here, as we've not done anything so far that would cause an odd memory address by this point! Still, it's good practice!
 
-cookie_jar	equ	$5a0
 
-machine_cookie	equ	'_MCH'
-falcon_machine	equ	3
+; <- In this subroutine, we need to check if we're running on a Falcon, and set a flag that can referenced later.
+
+; <- First a couple of equates:
+cookie_jar	equ	$5a0	; <- The "Cookie Jar" is an area of memory, on the STE onwards, that provides information about the machine.
+
+machine_cookie	equ	'_MCH'	; <- This is the cookie that tells us what machine we're running on.
+falcon_machine	equ	3		; <- If it's a Falcon, this is the value.
 
 check_falcon
-	sf	falcon
-	move.l	#machine_cookie,d0
-	bsr	search_cookie
-	tst.l	d0
+	sf	falcon						; <- Set the flag to false as default.	
+	move.l	#machine_cookie,d0		; { <- Do a search for the machine cookie.
+	bsr	search_cookie				; { <- (We get the result in d0 as a longword)
+	tst.l	d0						; <- Exit if there's no cookie. (falcon=False)
 	beq.s	.nope
-	cmpi.l	#'NULL',d0
+	cmpi.l	#'NULL',d0				; <- Exit if the cookie value is 'NULL'. (falcon=False) This would happen if you get to end of the cookie jar without finding the machine cookie. (I'm not too why sure this would ever happen!)
 	beq.s	.nope
-	swap	d0
-	cmpi.l	#falcon_machine,d0
+	swap	d0						; <- The actual value is in the top word of the longword. (We needed it this way to do the 'NULL' check.) So we swap the top and bottom words, so we can now do a comparision.
+	cmpi.l	#falcon_machine,d0		; <- Exit if the cookie value is *not* 3. (falcon=False)
 	bne.s	.nope
-	st	falcon
-.nope	rts
+	st	falcon						; <- If we get here, then we've found the machine cookie, and it's confirmed we're running on a Falcon. (falcon=True)
+.nope
+	rts
 
+
+; <- Fairly generic cookie jar search subroutine, which we've used in a few demos.
+; <- This assumes d0 contains the longword value of the 4 character name of the cookie we're looking for.
+; <- The result is returned in d0 as a longword, which is the value of the cookie, or zero if it's not found.
+; <- Note that the result could be a longword comprising of the 4 character string 'NULL', so that's why we 
+; <- return the values as a longword, even though the actual cookie value will be in the top word.
 search_cookie
-	move.l	cookie_jar.w,d1
-	tst	d1
+	move.l	cookie_jar.w,d1			; <- Get the address of the cookie jar.
+	tst	d1							; <- Exit if there's no cookie jar. (STFM or earlier)
 	beq.s	.null
-.search	move.l	d1,a0
-.loop	move.l	(a0)+,d1
-	cmpi.l	#'NULL',d1		< End of cookie jar
+.search
+	move.l	d1,a0					; <- Now we have the address of the cookie jar, we can start searching it.
+.loop
+	move.l	(a0)+,d1
+	cmpi.l	#'NULL',d1				; < End of cookie jar <- I just love that they represent a null value as a 4 character string 'NULL'!
 	beq.s	.null
-	tst.l	d1			< Unofficial 'end'
+	tst.l	d1						; < Unofficial 'end' <- We found there was a lot of blank space between the last actual cookie and the 'NULL' terminator.
 	beq.s	.null
-	cmp.l	d0,d1
-	beq.s	.found
-	addq.l	#4,a0
+	cmp.l	d0,d1					; <- Is this the cookie we're looking for?
+	beq.s	.found					; <- Yes! Exit out of the loop.
+	addq.l	#4,a0					; <- No, so move on to the next cookie.
 	bra.s	.loop
-.found	move.l	(a0)+,d0
+.found
+	move.l	(a0)+,d0				; <- Get the value of the cookie.
 	bra.s	.exit
-.null	move.l	d1,d0
-.exit	rts
+.null
+	move.l	d1,d0					; <- No cookie found, so return zero. (Remember, d1 will be zero at this point. Dunno why we just didn't explicitly set d0 to zero, it would have been just as fast!)
+.exit
+	rts
 
-falcon	ds.b	1
-	even
+falcon	ds.b	1			; <- This is the flag that we set in the check_falcon subroutine.
+	even	; <- Now this 'even' makes more sense, as we're on a odd address at this point!
 
+; <- *** SENIOR DADS INTRO ***
+; <-
+; <- This puts the screemode to ST Low-res, plays the fanfare, displays the "Presents" screen, and 
+; <- displays the intro message.
+; <-
+; <- You'll notice a couple of lines commented out here. We found that the hardware way of putting the
+; <- screen into ST Low-res mode (clr.b	$ffff8260.w) didn't work on the Falcon, so we had to use the
+; <- TOS Trap #14 method instead. Then we realised thst it was a bit silly to keep the hardware method
+; <- in there just for the ST, and the Trap #14 would work on the ST as well, since it was being run 
+; <- from the desktop anyway. So we commented out the hardware method and check, and kept the Trap #14 method.
 senior_intro
-	jsr	senior_fanfare
+	jsr	senior_fanfare					; <- Initialise the fanfare music.
 ;	if_false.s	falcon,.st_modechange
-	clr.w	-(sp)
+	clr.w	-(sp)						; <- Put the screen into ST Low-res mode. (clr.w = 0)
 	pea	-1
 	pea	-1
 	move.w	#5,-(sp)
@@ -117,33 +154,36 @@ senior_intro
 ;	bra.s	.ok
 ;.st_modechange
 ;	clr.b	$ffff8260.w
-.ok	move.l	$70.w,-(sp)
-	move.l	#wait_shit,$70.w
-	move.w	#4-1,$468.w
+.ok	move.l	$70.w,-(sp)					; <- Save the current vertical blank interrupt (vbl). We're doing it this way, so that when the intro is over, we'll pop it back off the stack, and leave it free for the main demo to do what it sees fit with it.
+	move.l	#wait_shit,$70.w			; <- Intro music play and timer vbl. Now the music will start playing
+	move.w	#4-1,$468.w					; <- $468 is a memory location that hosts a counter used by the system vbl, so we'll use that. The intro vbl will decrement this value every frame.
 .wait_adjust
-	tst.w	$468.w
+	tst.w	$468.w						; <- Wait 4 frames (For some reason, we found this neccessary on the Falcon.)
 	bne.s	.wait_adjust
-	move.l	$44e.w,a1
+	move.l	$44e.w,a1					; <- Get the memory address of the current screen being displayed.
 	move.l	a1,a2
-	lea	senior_presents+2,a0
-	movem.l	(a0)+,d0-d7
-	movem.l	d0-d7,$ffff8240.w
-	move.w	#(32000/4)-1,d0
-.loop	move.l	(a0)+,(a1)+
+	lea	senior_presents+2,a0			; <- Now we're pointing a0 at the colour pallette information part of the Degas Elite file for the "Presents..." screen.
+	movem.l	(a0)+,d0-d7					; <- Extracting that information into the 8 registers, and moving the a0 pointer past the information
+	movem.l	d0-d7,$ffff8240.w			; <- Now putting the colours into the hardware colour registers
+	move.w	#(32000/4)-1,d0				; <- Now a0 is pointing at the ~32K worth of picture data from the Degas file. We just need to copy it onto the screen.
+.loop	
+	move.l	(a0)+,(a1)+
 	dbf	d0,.loop	
-	move.l	a2,d0
-	lsr	#8,d0
-	move.l	d0,$ffff8200.w
-	move.w	#(10*50)-1,$468.w
-.loop1	cmp.b	#$39,$fffffc02.w
+	move.l	a2,d0						; <- Errr... We appear to be setting the screen memory address here by hardware! Even though we're not really changing it!
+	lsr	#8,d0							; <- W're also making sure that address is aligned on a 256 byte boundary. Even though it probably already is!
+	move.l	d0,$ffff8200.w				; <- This where we're setting the screen memory address by hardware. Might be a Falcon compatibility thing.
+	move.w	#(10*50)-1,$468.w			; <- Now we're setting a wait for 50 frames (10 seconds on an RGB monitor) before displaying the intro message.
+.loop1	
+    cmp.b	#$39,$fffffc02.w			; <- This also waits for the user to press the space bar ($39), if the user is impatient!
 	beq.s	.stloop2
-	tst.w	$468.w
+	tst.w	$468.w						; <- If the user's not pressed space, wait till the counter counts down.
 	bne.s	.loop1
 .stloop2
-.fuck		cmp.b	#$39,$fffffc02.w
-		beq.s	.fuck
-	move.l	(sp),$70.w
-	move.l	#$7770777,d0
+.fuck
+	cmp.b	#$39,$fffffc02.w			; <- Not too sure what this is about! Perhaps we're flushing the keyboard here, because the next part also as a check for the space bar.
+	beq.s	.fuck
+	move.l	(sp),$70.w					; <- Wait, what? We've already done that!
+	move.l	#$7770777,d0				; <- The next bit sets up all the colours to be white
 	move.l	d0,d1
 	move.l	d0,d2
 	move.l	d0,d3
@@ -151,25 +191,27 @@ senior_intro
 	move.l	d0,d5
 	move.l	d0,d6
 	move.l	d0,d7
-	move.w	$ffff8240.w,d0
-	swap	d0
-	movem.l	d0-d7,$ffff8240.w
-	pea	.important_message
+	move.w	$ffff8240.w,d0				; <- ... except the first two colours
+	swap	d0							; <- ... which are then swapped around. (Navy blue becomes the background colour)
+	movem.l	d0-d7,$ffff8240.w			; <- Set the hardware colours!
+	pea	.important_message				; <- Print the important message
 	move	#9,-(sp)
 	trap	#1
 	addq.l	#6,sp
-	move.w	#(15*50)-1,$468.w
-	move.l	#wait_shit,$70.w
-.loop2	cmp.b	#$39,$fffffc02.w
+	move.w	#(15*50)-1,$468.w			; <- Set the timer
+	move.l	#wait_shit,$70.w			; <- Hang on! We already set that!
+.loop2									; <- The time and space bar wait, again.
+	cmp.b	#$39,$fffffc02.w
 	beq.s	.end
 	tst.w	$468.w
 	bne.s	.loop2
-.end	move.l	(sp)+,$70.w
-	rts
+.end
+	move.l	(sp)+,$70.w					; <- Restore the old system vbl, but hang on!!! There's another copy of this address next on the stack!
+	rts		; <- Which means the 'rts' here will pop what it thinks is the return address to go, and instead go through the system vbl, which will then pop off the *real* address, and return there! It seems to still work, but that was a near thing!
 
 .important_message
 ;	dc.b	'0123456789012345678901234567890123456789'
-	dc.b	27,'E',27,'b1'
+	dc.b	27,'E',27,'b1'	; <- Clear screen, and set the text colour to one of the white colours.
 	dc.b	'   YES!!!! THE TRUTH CAN BE TOLD!!!',13,10,10
 	dc.b	'The SENIOR DADS did a demo especially',13,10
 	dc.b	'for ST FLOORMAT when they did their',13,10
@@ -189,34 +231,35 @@ senior_intro
 
 	even
 
+; <- Music and counter vbl. Called 50 frames a second on RGB monitors.
 wait_shit
 	movem.l	d0-a6,-(sp)
-	jsr	senior_fanfare+8
+	jsr	senior_fanfare+8			; <- Play a frames worth of music.
 	movem.l	(sp)+,d0-a6
-	subq.w	#1,$468.w
+	subq.w	#1,$468.w				; <- Count down counter.
 	rte
 
 * Do bombs. Plots the old system bomb bitmap to the screen. Converted
 ; from a similar procedure in "Colonic Irrigation". Assumes ST lo-res
-; screen. d0= no of bombs
+; screen. d0 = no of bombs
 
 do_bombs
 	move.l	front,a1		; Get to front of screen
 	adda.l	#100*160,a1		; Go halfway down it.
-	lea	bomb_dat,a0		; Get bomb bitmap ready
-.loop					; For d0 bombs do...
+	lea	bomb_dat,a0			; Get bomb bitmap ready
+.loop						; For d0 bombs do...
 bi	set	0
 bj	set	0
 	REPT	16			 
-	move.w	bi(a0),bj(a1)		{
-	move.w	bi(a0),bj+2(a1)		{ --- Copy bomb bitmap to screen
-	move.w	bi(a0),bj+4(a1)		{     (all planes ie colour 15)
-	move.w	bi(a0),bj+6(a1)		{
+	move.w	bi(a0),bj(a1)		; {
+	move.w	bi(a0),bj+2(a1)		; { --- Copy bomb bitmap to screen
+	move.w	bi(a0),bj+4(a1)		; {     (all planes ie colour 15)
+	move.w	bi(a0),bj+6(a1)		; {
 bi	set	bi+2
 bj	set	bj+160
 	ENDR
-	addq.l	#8,a1			;   Go to position of next bomb
-	dbf	d0,.loop		; Next bomb.
+	addq.l	#8,a1			; Go to position of next bomb
+	dbf	d0,.loop			; Next bomb.
 	rts
 
 * Bitmap pattern for "bomb". Copied out of ST Internals BIOS listing.
@@ -238,6 +281,9 @@ bomb_dat
 	dc.w	%0000011111111100
 	dc.w	%0000001111111000
 	dc.w	%0000000011100000
+
+
+; <- Here are the subroutines that save and restore system hardware variables.
 
 save_palette
 		movem.l	d0-a7,-(sp)
@@ -269,9 +315,11 @@ save_mfp
 		move.b	$fffa07,old_inter1	
 		move.b	$fffa09,old_inter2
 		rts
+
+; <- The subroutine is a little different in that it also plays the crash music at the end of the demo.
 restore_mfp
-	jsr	crash_sound
-	jsr	crash_sound+8
+	jsr	crash_sound				; <- Initialise crash music.
+	jsr	crash_sound+8			; <- CRAAAAAASH!!! (We only need to call this once, not every vbl.)
 	move	#$2700,sr
 	;movem.l	d0-a6,-(sp)
 	;jsr	music+12
@@ -292,7 +340,8 @@ save_screen
 		getphys	oldphys
 		getlog	oldlog
 		getrez_falc	old_falcrez
-.end		rts
+.end
+		rts
 
 old_falcrez	ds.w	1
 oldphys		ds.l	1
@@ -308,7 +357,8 @@ restore_screen
 		jsr	music+4
 		if_false.s	falcon,.exit
 		setrez_falc	old_falcrez,oldphys,oldlog
-.exit		rts
+.exit
+		rts
 	
 kill_system
 		move.b	#0,$fffa07		; die nasty timers
