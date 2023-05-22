@@ -31,7 +31,7 @@
 
 	opt	d-
 
-	include	includes\genmacro.s			; <- General macros (most of them are not used!)
+	include	includes\genmacro.s			; <- General macros (Most of them are not used!)
 
 start
 		clr.l	-(sp)					; <- As we're addressing the hardware, need to go into supervisor mode	
@@ -39,24 +39,24 @@ start
 		trap	#1
 		addq.l	#6,sp
 		move.l	d0,oldstack				; <- Save old stack pointer, as we're going to use our own stack.
-		lea	mystack,a7
-		bsr	check_falcon
-		bsr	save_palette				; <- Before we start attacking the hardware, we need to save the current state of the hardware, and that starts here on the next couple of lines.
-		bsr	save_mfp
-		bsr	save_screen
-		bsr	save_vectors	
-		bsr	kill_system		
-		bsr	senior_intro				; <- This is the retrofitted intro screen.
-		bsr	draw_pic
-		bsr	set_my_inters				; <- Startup for the main part of the demo, including the main music.
+		lea		mystack,a7
+		bsr		check_falcon
+		bsr		save_palette			; <- Before we start attacking the hardware, we need to save the current state of the hardware, and that starts here on the next couple of lines.
+		bsr		save_mfp
+		bsr		save_screen
+		bsr		save_vectors	
+		bsr		kill_system		
+		bsr		senior_intro			; <- This is the retrofitted intro screen.
+		bsr		draw_pic
+		bsr		set_my_inters			; <- Startup for the main part of the demo, including the main music.
 
-		bsr	Fear_of_the_dark	; Iron Maiden rule!!!!!!!!!! <- This is the main demo loop, which also includes the retrofiiter Senior Dads Crash ending.
-end	; <- Not sure if this label is used anywhere!
-		bsr	restore_palette
-		bsr	restore_mfp
-		bsr	restore_vectors
-		bsr	restore_screen
-		bsr	enable_system
+		bsr		Fear_of_the_dark	; Iron Maiden rule!!!!!!!!!! <- This is the main demo loop, which also includes the retrofiiter Senior Dads Crash ending.
+end	; <- Yes, this label is used elsewhere!!!
+		bsr		restore_palette
+		bsr		restore_mfp
+		bsr		restore_vectors
+		bsr		restore_screen
+		bsr		enable_system
 		move.b	#2,$ff820a	; <- In the demo, you flip the screen 50/60Hz, so we're resetting the frequency back to the default of 50Hz. This was in the days when nearly all Atari colour displays were PAL with 50Hz as default. it probably will cause a bit of a problem if it's run on a Falcon with a VGA display!
 		move.w	#0,$ff8240+6	
 		move.w	#$fff,$ff8240		; fix stupid bug! <- Dunno what this is about, but this line and the previous one appear to reset a couple of colour registers back to the system default.
@@ -69,25 +69,25 @@ quit	; <- Not sure if this label is used anywhere either! Maybe it was in an ear
 		clr.l	(sp)				; <- Now we're back in user mode, we can exit the program and return to the desktop. Of course, on occasion, the desktop may look rather wonky!
 		trap	#1
 
-	ds.l	200			; <- Space for our nice big juicy stack! (Remember, stacks grow downwards in memory.)
+		ds.l	200		; <- Space for our nice big juicy stack! (Remember, stacks grow downwards in memory.)
 mystack	ds.l	1		; <- Start of the stack.
 oldstack
-	ds.l	1			; <- This points to the memory location of stack before we started using our own stack.)
+		ds.l	1		; <- This points to the memory location of stack before we started using our own stack.)
 		even			; <- Note sure why this is here, as we've not done anything so far that would cause an odd memory address by this point! Still, it's good practice!
 
 
 ; <- In this subroutine, we need to check if we're running on a Falcon, and set a flag that can referenced later.
 
 ; <- First a couple of equates:
-cookie_jar	equ	$5a0	; <- The "Cookie Jar" is an area of memory, on the STE onwards, that provides information about the machine.
+cookie_jar	equ	$5a0		; <- The "Cookie Jar" is an area of memory, on the STE onwards, that provides information about the machine.
 
 machine_cookie	equ	'_MCH'	; <- This is the cookie that tells us what machine we're running on.
 falcon_machine	equ	3		; <- If it's a Falcon, this is the value.
 
 check_falcon
-	sf	falcon						; <- Set the flag to false as default.	
+	sf		falcon					; <- Set the flag to false as default.	
 	move.l	#machine_cookie,d0		; { <- Do a search for the machine cookie.
-	bsr	search_cookie				; { <- (We get the result in d0 as a longword)
+	bsr		search_cookie			; { <- (We get the result in d0 as a longword)
 	tst.l	d0						; <- Exit if there's no cookie. (falcon=False)
 	beq.s	.nope
 	cmpi.l	#'NULL',d0				; <- Exit if the cookie value is 'NULL'. (falcon=False) This would happen if you get to end of the cookie jar without finding the machine cookie. (I'm not too why sure this would ever happen!)
@@ -95,7 +95,7 @@ check_falcon
 	swap	d0						; <- The actual value is in the top word of the longword. (We needed it this way to do the 'NULL' check.) So we swap the top and bottom words, so we can now do a comparision.
 	cmpi.l	#falcon_machine,d0		; <- Exit if the cookie value is *not* 3. (falcon=False)
 	bne.s	.nope
-	st	falcon						; <- If we get here, then we've found the machine cookie, and it's confirmed we're running on a Falcon. (falcon=True)
+	st		falcon					; <- If we get here, then we've found the machine cookie, and it's confirmed we're running on a Falcon. (falcon=True)
 .nope
 	rts
 
@@ -143,14 +143,14 @@ falcon	ds.b	1			; <- This is the flag that we set in the check_falcon subroutine
 ; <- in there just for the ST, and the Trap #14 would work on the ST as well, since it was being run 
 ; <- from the desktop anyway. So we commented out the hardware method and check, and kept the Trap #14 method.
 senior_intro
-	jsr	senior_fanfare					; <- Initialise the fanfare music.
+	jsr		senior_fanfare				; <- Initialise the fanfare music.
 ;	if_false.s	falcon,.st_modechange
 	clr.w	-(sp)						; <- Put the screen into ST Low-res mode. (clr.w = 0)
 	pea	-1
 	pea	-1
 	move.w	#5,-(sp)
 	trap	#14
-	lea	12(sp),sp
+	lea		12(sp),sp
 ;	bra.s	.ok
 ;.st_modechange
 ;	clr.b	$ffff8260.w
@@ -162,15 +162,15 @@ senior_intro
 	bne.s	.wait_adjust
 	move.l	$44e.w,a1					; <- Get the memory address of the current screen being displayed.
 	move.l	a1,a2
-	lea	senior_presents+2,a0			; <- Now we're pointing a0 at the colour pallette information part of the Degas Elite file for the "Presents..." screen.
+	lea		senior_presents+2,a0		; <- Now we're pointing a0 at the colour pallette information part of the Degas Elite file for the "Presents..." screen.
 	movem.l	(a0)+,d0-d7					; <- Extracting that information into the 8 registers, and moving the a0 pointer past the information
 	movem.l	d0-d7,$ffff8240.w			; <- Now putting the colours into the hardware colour registers
 	move.w	#(32000/4)-1,d0				; <- Now a0 is pointing at the ~32K worth of picture data from the Degas file. We just need to copy it onto the screen.
 .loop	
 	move.l	(a0)+,(a1)+
-	dbf	d0,.loop	
+	dbf		d0,.loop	
 	move.l	a2,d0						; <- Errr... We appear to be setting the screen memory address here by hardware! Even though we're not really changing it!
-	lsr	#8,d0							; <- W're also making sure that address is aligned on a 256 byte boundary. Even though it probably already is!
+	lsr		#8,d0						; <- W're also making sure that address is aligned on a 256 byte boundary. Even though it probably already is!
 	move.l	d0,$ffff8200.w				; <- This where we're setting the screen memory address by hardware. Might be a Falcon compatibility thing.
 	move.w	#(10*50)-1,$468.w			; <- Now we're setting a wait for 50 frames (10 seconds on an RGB monitor) before displaying the intro message.
 .loop1	
@@ -194,7 +194,7 @@ senior_intro
 	move.w	$ffff8240.w,d0				; <- ... except the first two colours
 	swap	d0							; <- ... which are then swapped around. (Navy blue becomes the background colour)
 	movem.l	d0-d7,$ffff8240.w			; <- Set the hardware colours!
-	pea	.important_message				; <- Print the important message
+	pea		.important_message			; <- Print the important message
 	move	#9,-(sp)
 	trap	#1
 	addq.l	#6,sp
@@ -234,7 +234,7 @@ senior_intro
 ; <- Music and counter vbl. Called 50 frames a second on RGB monitors.
 wait_shit
 	movem.l	d0-a6,-(sp)
-	jsr	senior_fanfare+8			; <- Play a frames worth of music.
+	jsr		senior_fanfare+8		; <- Play a frame's worth of music.
 	movem.l	(sp)+,d0-a6
 	subq.w	#1,$468.w				; <- Count down counter.
 	rte
@@ -246,7 +246,7 @@ wait_shit
 do_bombs
 	move.l	front,a1		; Get to front of screen
 	adda.l	#100*160,a1		; Go halfway down it.
-	lea	bomb_dat,a0			; Get bomb bitmap ready
+	lea		bomb_dat,a0		; Get bomb bitmap ready
 .loop						; For d0 bombs do...
 bi	set	0
 bj	set	0
@@ -259,7 +259,7 @@ bi	set	bi+2
 bj	set	bj+160
 	ENDR
 	addq.l	#8,a1			; Go to position of next bomb
-	dbf	d0,.loop			; Next bomb.
+	dbf		d0,.loop		; Next bomb.
 	rts
 
 * Bitmap pattern for "bomb". Copied out of ST Internals BIOS listing.
@@ -301,8 +301,8 @@ save_em
 restore_palette
 		movem.l	d0-a7,-(sp)
 	
-		lea	$ff8240,a0		; palette base
-		lea	old_cols,a1		; save palette buffer
+		lea		$ff8240,a0		; palette base
+		lea		old_cols,a1		; save palette buffer
 		moveq.l	#7,d0
 restore_em
 		move.l	(a1)+,(a0)+
@@ -318,35 +318,46 @@ save_mfp
 
 ; <- The subroutine is a little different in that it also plays the crash music at the end of the demo.
 restore_mfp
-	jsr	crash_sound				; <- Initialise crash music.
-	jsr	crash_sound+8			; <- CRAAAAAASH!!! (We only need to call this once, not every vbl.)
+	jsr		crash_sound				; <- Initialise crash music.
+	jsr		crash_sound+8			; <- CRAAAAAASH!!! (We only need to call this once, not every vbl.)
 	move	#$2700,sr
 	;movem.l	d0-a6,-(sp)
 	;jsr	music+12
 	;movem.l	(sp)+,d0-a6
-		move.b	old_inter1,$fffa07	
-		move.b	old_inter2,$fffa09
-		bset	#3,$fffa17	; automatic end of interrupt	
+	move.b	old_inter1,$fffa07	
+	move.b	old_inter2,$fffa09
+	bset	#3,$fffa17	; automatic end of interrupt	
 	move	#$2300,sr
-		rts
+	rts
+
+; <- You'll notice here that we're using the Falcon checks. This is because the more we have to save more than
+; <- the usual ST(E) graphics registers, due to the complexity of the Falcon's VIDEL chip. This is where our
+; <- macros in INCLUDES/GENMACRO.S kick in. 
+; <-
+; <- Macros used here:
+; <- 'if_false [byte], [address]' - If a [byte] is zero (ie binary false), then jump to an instruction at [address].
+; <- 'getphys [address]' - Get the address of the physical screen.
+; <- 'getlog [address]' - Get the address of the logical screen.
+; <- 'getrez_falc [address]' - Save the details of the Falcon's screen resolution to [address].
 save_screen
 		move.b	$ff8201,old_screen+1
 		move.b	$ff8203,old_screen+2
-		;move.b	$ff820d,old_screen+3	; ste only register
+		;move.b	$ff820d,old_screen+3	; ste only register	
 		;move.b	$ff8265,smooth_scrl	; ste only register
 		;move.b	$ff820f,plane_mod	; ste only register
 		move.b	$ff8260,old_res	
-		if_false.s	falcon,.end
+		if_false.s	falcon,.end				; <- If it's not a Falcon, miss out the Falcon bits, because, well, it's not a Falcon!
 		getphys	oldphys
 		getlog	oldlog
 		getrez_falc	old_falcrez
-.end
-		rts
+.end	rts
 
 old_falcrez	ds.w	1
 oldphys		ds.l	1
 oldlog		ds.l	1
 
+; <- Another macro used in this subroutine:
+; <- 'setrez_falc [old_falcrez], [oldphys], [oldlog]' - Set the Falcon's screen resolution to [old_falcrez] with [oldphys] and [oldlog] as the physical and logical screen addresses respectively.
 restore_screen
 		move.b	old_screen+1,$ff8201
 		move.b	old_screen+2,$ff8203
@@ -354,7 +365,7 @@ restore_screen
 		;move.b	smooth_scrl,$ff8265	; ste only register
 		;move.b	plane_mod,$ff820f	; ste only register
 		move.b	old_res,$ff8260	
-		jsr	music+4
+		jsr		music+4							; <- Silence the "CRAAAAAASH!!!" music.
 		if_false.s	falcon,.exit
 		setrez_falc	old_falcrez,oldphys,oldlog
 .exit
@@ -372,26 +383,29 @@ enable_system
 	
 save_vectors
 		move.l	(sp),d0
-		lea	$64,a1			; is that the first vector??
-		lea	vec_buffer,a0
+		lea		$64,a1			; is that the first vector??
+		lea		vec_buffer,a0
 		moveq.l	#7,d1
 get_em
 		move.l	(a1)+,(a0)+
-		dbf	d1,get_em	
+		dbf		d1,get_em	
 		move.l	d0,(sp)
 		rts
 
 restore_vectors
 		move.l	(sp),d0
-		lea	$64,a0	
-		lea	vec_buffer,a1
+		lea		$64,a0	
+		lea		vec_buffer,a1
 		moveq.l	#7,d1
 get_em2
 		move.l	(a1)+,(a0)+
-		dbf	d1,get_em2	
+		dbf		d1,get_em2	
 		move.l	d0,(sp)
-		bsr	waste_time
+		bsr		waste_time
 		rts
+
+; <- Now we set up the main demo interrupts, which use the vbl interrupt for the main demo loop,
+; <- and the timer B for the rasters.
 set_my_inters
 	move	#$2700,sr
 	;movem.l	d0-a6,-(sp)
@@ -399,32 +413,33 @@ set_my_inters
 	;jsr	music
 	;jsr	music+4
 	;movem.l	(sp)+,d0-a6
-		move.l	#my_vbl,$70		
+	move.l	#my_vbl,$70		
 		
-		move.l	#timer_b,$120
-		bclr	#3,$fffa17	; automatic end of interrupt	
-		move.b	#4,$fffa21		
+	move.l	#timer_b,$120
+	bclr	#3,$fffa17	; automatic end of interrupt	
+	move.b	#4,$fffa21		
 	move	#$2300,sr
-		rts			
+	rts			
 
+; <- This draws the intro picture after the Senior Dads intro and message.
 draw_pic
-		move.l	(sp),-(sp)	
-	move.l	$70.w,-(sp)
-	move.l	#wait_shit,$70.w
+		move.l	(sp),-(sp)					; <- Wait, what??!
+		move.l	$70.w,-(sp)					; <- Saving the vbl interrupt. You could have done that anyway, without needing the previous instruction!
+		move.l	#wait_shit,$70.w			; <- Don't forget we're still playing the tail end of the Senior Dads fanfare.
 ;		move.b	$44e+1,$ff8201
 ;		move.b	$44e+2,$ff8202
-		move.l	$44e.w,d0
-		lsr	#8,d0
+		move.l	$44e.w,d0					; <- As before, making sure the screen is aligned on a 256 byte boundry
+		lsr		#8,d0
 		move.l	d0,$ffff8200.w
 		
-		lea	sys_pal,a0
-		lea	$ff8240,a1
+		lea		sys_pal,a0					; <- screen colours to system default pallette.
+		lea		$ff8240,a1
 		
 		rept	16
 		move.w	(a0)+,(a1)+
 		endr
 		
-		move.l	#intro_pic+34,a1
+		move.l	#intro_pic+34,a1			; <- Deliberately rubbish slow draw of picture onto screen!
 		move.l	$44e,a0
 		
 		move.l	#(32000/200)-1,d0
@@ -432,51 +447,64 @@ crappy_pic
 		rept	200
 		move.b	(a1)+,(a0)+
 		endr
-		move.	#3-1,d6
-.loop1		move	$468.w,d7
-.loop		cmp.w	$468.w,d7
+		moveq	#3-1,d6						; <- Every so often, there a pause of 3 frames.
+.loop1
+		move	$468.w,d7
+.loop
+		cmp.w	$468.w,d7
 		beq.s	.loop
-		dbf	d6,.loop1
-		dbf	d0,crappy_pic
+		dbf		d6,.loop1
+		dbf		d0,crappy_pic
 		
-		move.l	#intro_pic+2,a0
+		move.l	#intro_pic+2,a0				; <- Once the picture has been copied, *then* we set the colour pallete to thatof the picture!
 		move.l	#$ff8240,a1
 		rept	16
 		move.w	(a0)+,(a1)+
 		endr	
-		
-.fuck		cmp.b	#$39,$fffffc02.w
+.fuck
+		cmp.b	#$39,$fffffc02.w			; <- Flush keyboard if space has been pressed before.
 		beq.s	.fuck
-		move.w	#(10*50)-1,$468.w
+		move.w	#(10*50)-1,$468.w			; <- As before, we're waiting for either the space bar to be pressed, or 10 seconds (on RGB monitors) to pass.
 munch
 		cmp.b	#$39,$fffffc02.w
 		beq.s	.emunch
-	tst.w	$468.w
-	bne.s	munch
-.emunch	move.l	(sp)+,$70.w
-		jsr	music
-		bset	#0,$484.w
+		tst.w	$468.w
+		bne.s	munch
+.emunch	move.l	(sp)+,$70.w					; <- Restore the vbl
+		jsr		music						; <- Initialise the main screen music.
+		bset	#0,$484.w					; <- ?????
 		
 		move.l	(sp)+,(sp)
 		rts
 			
+
+; <- This is actually the end crash! The crash music is playing by the his point, so this just draws the bombs and waits a couple of seconds. You can also press the space bar if you're impatient.
 waste_time
 		move.l	#5-1,d0
-		bsr	do_bombs
-.fuck		cmp.b	#$39,$fffffc02.w
+		bsr		do_bombs
+.fuck
+		cmp.b	#$39,$fffffc02.w
 		beq.s	.fuck
 		move	#(2*50)-1,d7
-.loop		cmp.b	#$39,$fffffc02.w
+.loop
+		cmp.b	#$39,$fffffc02.w
 		beq.s	.exit
 		move.w	$468.w,d6
-.wait		cmp.w	$468.w,d6
+.wait
+		cmp.w	$468.w,d6
 		beq.s	.wait
-		dbf	d7,.loop
-.exit		rts
+		dbf		d7,.loop
+.exit
+		rts
 
 ***************************************************************************
 *                    This is my wait vblank routine                       *
 ***************************************************************************
+; <- The vbl interupt does the following things every frame:
+; <- 1) Restart the Timer B interrupts (hbl), and the raster colours.
+; <- 2) Play the music.
+; <- 3) Colour cycling.
+; <- 4) VBL counter. (Is it us, or do there appear to be *two* of them?)
 			  
 my_vbl
 		addq.w	#1,vbl_count	
@@ -484,13 +512,13 @@ my_vbl
 		move.b	#8,$fffffa1b		; restart timer B
 		move.w	#$fff,$ff8242
 		move.w	#0,$ff8240
-		move.l	#col_list,col_pointer
+		move.l	#col_list,col_pointer					; <- Reset pointer to raster colours.
 		move.w	col_list,$ff8242
 		addq.l	#2,col_pointer
 		move.l	#scrolls_cols_point-4,scrolls_cols_point
 		movem.l	d0-a6,-(sp)
-		jsr	music+8
-		bsr	cycle
+		jsr		music+8
+		bsr		cycle
 		cmp.b	#16,$fffc02
 		bne.s	not_overscan
 		eor.b	#2,$ff820a
@@ -502,6 +530,9 @@ not_overscan
 ***************************************************************************
 *                   This is my timer b routine                            * 
 ***************************************************************************
+; <- This pops off colours from the lists, and changes the colour pallette registers to match.
+; <- There appears to be two raster lists, one for the scroller, and another for other colours affected
+; <- the scrollers use of one bitplane of the screen.
 
 timer_b
 		move.l	a5,-(sp)
@@ -517,38 +548,48 @@ timer_b
 		rte
 		
 * colour cycling
+; <- This takes the colours directly from the picture file, which had been included in memory,
+; <- and cycles them *in situ*, before copying them to the colour pallette registers! It also does it
+; <- without needing a loop, which is a pretty neat trick!
 
-cycle	lea	pic2+2,a0
-	movem.l	(a0),d0-d7
-	move	d0,(15*2)(a0)
-	movem.l	d1-d7,2(a0)
-	movem.l	(a0),d0-d7
+cycle
+	lea	pic2+2,a0
+	movem.l	(a0),d0-d7					; <- Get all the colours from the picture file.	
+	move.w	d0,(15*2)(a0)				; <- Move colour 1 to the end of the pallette. Notice we're doing a word move even thopugh d0 has a longword value. This works because colour 1 is in the low word of d0. We don't need to worry aboout colour 0 since that's the background colour, and we don't want to cycle that!
+	movem.l	d1-d7,2(a0)					; <- Move the rest of the colours down once place. Notice again we're missing out colour 0, as we want to remain the same.
+	movem.l	(a0),d0-d7					; <- Now the colours are cycled, we can copy them to the pallette registers.
 	movem.l	d0-d7,$ffff8240.w
 	rts
 	
 		
 ***************************************************************************		
-*		      This is the my demo init code                       *
+*		      This is the my demo init code                       		  *
 ***************************************************************************	
-
+; <- This sets up the main demo screen, and does the following:
+; <- 1) Sets up the screen memory for two screens (front and back).
+; <- 2) Slowly draws the main screen onto the front screen.
+; <- 3) Waits for about 10 seconds.
+; <- 4) Exits, meaing the scroller is about to start.
 set_up_stuff
 		move.l	(sp),-(sp)
-		move.l	#end_code,d0
+		move.l	#end_code,d0			; <- Find some memory space at the end of this code, and align it on a 256 byte boundary.
 		addi.l	#256,d0
 		clr.b	d0
 		move.l	d0,a0
 		move.l	d0,front
-		addi.l	#32000,d0
+		addi.l	#32000,d0				; <- Then add ~32k to it, to get the start of the second screen.
 		move.l	d0,back
-		moveq	#0,d0
+		moveq	#0,d0					; <- Clear the screens memory.
 		move.l	#((32000*2)/4)-1,d1
-.loop		move.l	d0,(a0)+
-		dbf	d1,.loop
+.loop
+		move.l	d0,(a0)+
+		dbf		d1,.loop
 		
-		bsr	vblank			; to stop the screen going	
-						; wacky after res change
+		bsr		vblank			; to stop the screen going		<- This is proably not needed, since we're already in ST low res at this point.
+								; wacky after res change
 		clr.b	$ff8260			; low res please
-		move.b	front+1,$ff8201
+
+		move.b	front+1,$ff8201			; <- Set the screen to point to the front screen.
 		move.b	front+2,$ff8203
 		move.b	front+3,$ff820d
 	
@@ -559,7 +600,7 @@ set_up_stuff
 		;move.w	(a0)+,(a1)+
 		;endr
 	
-		move.l	#(8000/60)-1,d0
+		move.l	#(8000/60)-1,d0			; <- Deliberately slow main screen reveal!
 		move.l	#pic2+34,a0
 		move.l	front,a1
 draw
@@ -567,25 +608,27 @@ draw
 		move.l	(a0)+,(a1)+
 		endr
 		movem.l	d6/d7,-(sp)
-		move.	#3-1,d6
-.loop1		move	$468.w,d7
-.loop		cmp.w	$468.w,d7
+		moveq	#3-1,d6
+.loop1
+		move	$468.w,d7
+.loop
+		cmp.w	$468.w,d7
 		beq.s	.loop
-		dbf	d6,.loop1
+		dbf		d6,.loop1
 		movem.l	(sp)+,d6/d7
-		dbf	d0,draw
+		dbf		d0,draw
 		
-		bsr	vblank	
+		bsr		vblank	
 		
-		rept	500
-		bsr	vblank
+		rept	500					; <- Wait for about 10 seconds. Well, that's one way to do it!
+		bsr		vblank
 		endr
 		
-		lea	pic2+2,a0
-		lea	$ff8240,a1
+		lea		pic2+2,a0
+		lea		$ff8240,a1
 		
 		rept	16
-		move.w	(a0)+,(a1)+
+		move.w	(a0)+,(a1)+			; <- Copy the colours from the picture file to the pallette registers.
 		endr
 		
 		move.l	(sp)+,(sp)
@@ -598,12 +641,13 @@ draw
 
 key
 		cmp.b	#57,$fffc02	; scan code for space bar	
-		beq	end
+		beq		end 		; <- See? We told you that label was being used!
 		rts
 
 ***************************************************************************		
-*		      This is the my wait vblank rout                     *
+*		      This is the my wait vblank rout                             *
 ***************************************************************************	
+; <- This probably explains why there appear to be two vbl counters in the vbl routine.
 
 vblank
 		clr.w	vbl_count
@@ -615,32 +659,39 @@ wait_for_vbl
 		rts	
 		
 ***************************************************************************		
-*		      This is the main loop of my code                    *
+*		      This is the main loop of my code                            *
 ***************************************************************************		
-		
+; <- This the main part in action. It does the following:
+; <- 1) Starts up the timer B interrupt.
+; <- 2) Goes into a loop, in wich it displays a scroller.
+; <- 3) Checks to see if the space bar has been pressed.
 Fear_of_the_dark
-		bsr	set_up_stuff
+		bsr		set_up_stuff
 		or.b	#1,$fffffa07	; enable timer B
 		or.b	#1,$fffffa13
 Somewhere_in_time
 		;move.w	#$333,$ff8240		; measure raster time
 		;jsr	vblank
-		jsr	vert_scrolly
+		jsr		vert_scrolly		; <- As you can see, this used to be a vertical scroller!
 		;move.w	#0,$ff8240		; measure raster time
 yet
-		jsr	key
+		jsr		key
 		;movem.l	d0-a6,-(sp)
 		;jsr	music+8
 		;movem.l	(sp)+,d0-a6
 		
-		jmp	Somewhere_in_time	; a bit faster than jmp 	
+		jmp		Somewhere_in_time	; a bit faster than jmp 	<- Ummm, it is a jmp?!?!
 		
 		
 
 		
 ***************************************************************************
 *        This is the code that swaps physical and logical  screeens       *
-***************************************************************************			
+***************************************************************************	
+; <- ... except that as you might have noticed, it doesn't appear to do that!
+; <- It just appears to set the display to the front screen, and then return.
+; <- Unless the values for 'front' and 'back' are being swapped somewhere else
+; <- in the code, it's not screen flipping at all!
 
 swap
 		move.b	front+1,$ff8201
@@ -652,71 +703,74 @@ swap
 ***************************************************************************
 *                      This is my scrolltext routine                      *
 ***************************************************************************
+; <- This is the scroller. it uses a 32x32 1 plane font, scrolling across 
+; <- the first bitplane in 1 pixel movements from right to left.
 
 vert_scrolly
 		move.l	(sp),-(sp)
 		
-		bsr	update_scroll
-		cmp.w	#32,vert_counter
+		bsr	update_scroll			; <- Scroll the scroller left one pixel.
+		cmp.w	#32,vert_counter	; <- Every 32 pixels, we need to get a new character to scroll in from the right.
 		beq	get_new_char
 mince	
-		addq.w	#1,vert_counter		
+		addq.w	#1,vert_counter		; <- If we've just received a new character, this will have been reset to zero.
 		
 		move.l	(sp)+,(sp)
 		rts
 		
+; <- Here's the scroller routine. You'll notice it uses the old-school roxl method of scrolling the bitplane data!
 update_scroll
 		move.l	(sp),-(sp)
 		move.l	front,a1
-		move.l	#31,d7
+		move.l	#31,d7				; <- for 32 scanlines do....
 lines
-offset		set	152		; maybe 44?
-		move.b	#0,ccr
+offset	set	152		; maybe 44?	 	; <- Start at the end of the line and work backwards.
+		;move.b	#0,ccr
 		
-		rept	20			
-		roxl.w	offset(a1)
-offset		set	offset-8
+		rept	20					; <- Working backwards for the 20 words in the line...
+		roxl.w	offset(a1)			; <- roxl shifts the bitplane word left, adding any bit shifted out in the previous roxl statement, thus shifting the whole bitplane line 1 pixel to the left as we work backwards.
+offset	set	offset-8				; <- Move to the previous word of the bitplane.
 		endr	
 		
-		add.l	#160,a1
+		add.l	#160,a1				; <- Move to the next line of the bitplane.
 		
-		dbf	d7,lines
+		dbf		d7,lines
 		
 		move.l	(sp)+,(sp)
 		rts
 		
 get_new_char
-		clr.w	vert_counter
-		bsr	vblank
-		bsr	vblank
+		clr.w	vert_counter			; <- Reset the scroll character counter.
+		bsr		vblank					; <- Wait for a couple of frames. Makes it look clunky!
+		bsr		vblank
 find_char
-		move.l	char_pointer,a0
+		move.l	char_pointer,a0			; <- Retreive the position where were are in the scrolltext.
 		moveq.l	#0,d0
-		move.b	(a0)+,d0
+		move.b	(a0)+,d0				; <- Now d0 contains the character we want to search for.
 		
 		cmp.b	#' ',d0
-		beq	load_spaces
+		beq		load_spaces
 		
-		cmp.b	#0,d0
+		cmp.b	#0,d0					; <- Check for end of scrolltext.
 		bne.s	calm
 		
-		move.l	#text,char_pointer
+		move.l	#text,char_pointer		; <- If we've reached the end of the scrolltext, go back to the start.
 		bra.s	find_char		
 calm
-		move.l	a0,char_pointer
-		move.l	#space,d1
-		sub.b	#$60,d0			; is that right?
-		lsl	#2,d0
-		add.l	d0,d1
+		move.l	a0,char_pointer			; <- Store the new position in the scrolltext.
+		move.l	#space,d1				; <- the first character in the font is a space, so we'll need to start from that address.
+		sub.b	#$60,d0			; is that right? <- Yes! The font is only capital letters, so we need to subtract $60 from the ascii value to get the correct position in the font. eg 'a' is $61, so take away $60, and we have $01, which is the first letter in the font data.
+		lsl		#2,d0					; <- Multiply by 4 to get the correct position in the font pointer table, as each pointer is a longword. (ie 4 bytes long.)
+		add.l	d0,d1					; <- Add that to the address of the first character in the font, and now d1 contains the address of the character pointer.
 		move.l	d1,a0
-		move.l	(a0),bitmap_pointer
+		move.l	(a0),bitmap_pointer		; <- Store that pointer. (Not sure if we actually need to, given the next step.)
 		
 		move.l	front,a0
 		move.l	bitmap_pointer,a2
 		
 offset		set	152-8
 
-		rept	32
+		rept	32						; <- Yes, you're reading this right! The entire character is compied wholesave directly onto the displayed screen! That's why you see the character just plop onto the screen rather than scrolled in!
 		move.w	(a2),offset(a0)
 		move.w	2(a2),offset+8(a0)
 		add.l	#40,a2
@@ -725,12 +779,15 @@ offset		set	offset+160
 		
 		endr
 		
-		bra	mince		
-		
+		bra	mince						; <- Return to the main scroller routine. 
+
+; <- For the space character, we just set the bitmap pointer, and do nothing else, since the character is blank.
+; <- May there was some point where it was planned to have the charaacter scrolled in rather than just plonked 
+; <- onto the screen, but it was never implemented. Who knows?!		
 load_spaces
 		move.l	#space_buffer,bitmap_pointer
 		move.l	a0,char_pointer
-		bra	mince
+		bra	mince						; <- Don't you just love those descriptive labels?!
 		
 		
 		rts
@@ -742,30 +799,34 @@ load_spaces
 *                This is my variables and my screen data                  *
 ***************************************************************************
 
-old_cols		ds.l	8
-old_screen		dc.l	0
-old_inter1		dc.b	0
-old_inter2		dc.b	0
-smooth_scrl		dc.b	0
-plane_mod		dc.b	0
-old_res			dc.b	0
+old_cols			ds.l	8
+old_screen			dc.l	0
+old_inter1			dc.b	0
+old_inter2			dc.b	0
+smooth_scrl			dc.b	0
+plane_mod			dc.b	0
+old_res				dc.b	0
 		even
 bitmap_pointer		dc.l	0
 vert_counter		dc.w	32
-char_pointer		dc.l	text
-old_sr			dc.w	0
-vec_buffer		ds.l	8
+char_pointer		dc.l	text		; <- The initial value here points to the scrolltext.
+old_sr				dc.w	0
+vec_buffer			ds.l	8
 vbl_count			dc.w	0
-horiz_count		dc.w	2
-buffer			dc.l	0
-front			dc.l	0
-back			dc.l	0
-col_pointer		dc.l	col_list+2
+horiz_count			dc.w	2
+buffer				dc.l	0
+front				dc.l	0
+back				dc.l	0
+col_pointer			dc.l	col_list+2
 
 
 
 	even
-	
+
+; <- Here's the raster colour list. As you can see, there was originally 
+; <- going to be much more, but we cut down the number of rasters, and increased
+; <- spacing, as the original settings combined with the colour cycling made it
+; <- almost impossible to read the scrolltext!
 col_list
 	REPT	5
 	
@@ -786,42 +847,53 @@ col_list
 
 scrolls_cols_point	dc.l	scrolls_cols_point-4
 
-
-
+; <- This the 32x32 font. We're not sure of source, but it looks like a 
+; <- one bitplane capture of a font from a Degas PI1 type file, which
+; <- will explain what we see immediately below.
 scroll_font	incbin	graphics\myfont.dat
 
+; <- Yes, this is a list of pointers to every character in the font!
+; <- It looks like this is stored as a single bitplane, characters going 
+; <- from left to right, top to bottom. The exception here appears to be 
+; <- the space, which appears to the last character on the first line!
+; <- This probably explains all these pointers. If the space was the first
+; <- character on the first line, and the other letters on that line were
+; <- shifed rightwards by one character, then we could just do a simple 
+; <- calculation in the 'get_new_char' subroutine to get the address of the 
+; <- character we want in the font.
 font_pointers
-
 space		dc.l	scroll_font+36		; points to a space
-a		dc.l	scroll_font
-b		dc.l	scroll_font+4
-c		dc.l	scroll_font+8
-d		dc.l	scroll_font+12
-e		dc.l	scroll_font+16
-f		dc.l	scroll_font+20
-g		dc.l	scroll_font+24
-h		dc.l	scroll_font+28
-i		dc.l	scroll_font+32
-j		dc.l	scroll_font+(40*32)
-k		dc.l	scroll_font+(40*32)+4
-l		dc.l	scroll_font+(40*32)+8
-m		dc.l	scroll_font+(40*32)+12
-n		dc.l	scroll_font+(40*32)+16
-o		dc.l	scroll_font+(40*32)+20
-p		dc.l	scroll_font+(40*32)+24
-q		dc.l	scroll_font+(40*32)+28
-r		dc.l	scroll_font+(40*32)+32
-s		dc.l	scroll_font+(80*32)
-t		dc.l	scroll_font+(80*32)+4
-u		dc.l	scroll_font+(80*32)+8
-v		dc.l	scroll_font+(80*32)+12
-w		dc.l	scroll_font+(80*32)+16
-x		dc.l	scroll_font+(80*32)+20
-y		dc.l	scroll_font+(80*32)+24
-z		dc.l	scroll_font+(80*32)+28
-		dc.l	0
+a			dc.l	scroll_font
+b			dc.l	scroll_font+4
+c			dc.l	scroll_font+8
+d			dc.l	scroll_font+12
+e			dc.l	scroll_font+16
+f			dc.l	scroll_font+20
+g			dc.l	scroll_font+24
+h			dc.l	scroll_font+28
+i			dc.l	scroll_font+32
+j			dc.l	scroll_font+(40*32)
+k			dc.l	scroll_font+(40*32)+4
+l			dc.l	scroll_font+(40*32)+8
+m			dc.l	scroll_font+(40*32)+12
+n			dc.l	scroll_font+(40*32)+16
+o			dc.l	scroll_font+(40*32)+20
+p			dc.l	scroll_font+(40*32)+24
+q			dc.l	scroll_font+(40*32)+28
+r			dc.l	scroll_font+(40*32)+32
+s			dc.l	scroll_font+(80*32)
+t			dc.l	scroll_font+(80*32)+4
+u			dc.l	scroll_font+(80*32)+8
+v			dc.l	scroll_font+(80*32)+12
+w			dc.l	scroll_font+(80*32)+16
+x			dc.l	scroll_font+(80*32)+20
+y			dc.l	scroll_font+(80*32)+24
+z			dc.l	scroll_font+(80*32)+28
+			dc.l	0							; <- Errr, I don't think we really need this!
 
-		dc.b	$61+30
+		dc.b	$61+30			; <- ?????????????
+
+; <- This is the scrolltext. As you can see, it's all lowercase with no punctuation, and terminates witha zero byte.
 text		
 		dc.b	'press q to kill top and bottom borders      '
 		dc.b	'      hello to everybody reading this cool demoscreen     anyone who said we were complete lamers are extremely silly sadcases       '
@@ -880,23 +952,20 @@ text
 		dc.b	'we don t like people to find out things like this as it damages our reputation        '
 		dc.b	'anyway the last thing that needs to be said is we are not the sad degenerate plonkers that the scene thinks we are and we can really code better than anybody else    so there             '
 		dc.b	'well bye bye now as we must reactivate this super scroller now so          cheerio               '                 
-		dc.b	0	
-		
-		
+		dc.b	0				; <- End of the scroller.
 		even
 		
-		
-		
-		
 space_buffer
-		dcb.l	40*32,0
+		dcb.l	40*32,0								; <- Again, not sure we need this. We're just not drawing anything when we're doing a space!
 		
-sys_pal		incbin	graphics\syspal.dat
-senior_presents	incbin	graphics\senior.pi1
-intro_pic	incbin	graphics\wnkpss1.pi1
-pic2		incbin	graphics\wnkpss2.pi1
-senior_fanfare	incbin	sound\senior.thk
-music		incbin	sound\popcorn.thk
-crash_sound	incbin	sound\crash.thk
+sys_pal			incbin	graphics\syspal.dat			; <- Colour values for the default ST Lo res palette
+
+senior_presents	incbin	graphics\senior.pi1			; <- GRAPHICS: Senior Dads Presents
+intro_pic		incbin	graphics\wnkpss1.pi1		; <- GRAPHICS: Intro Pic
+pic2			incbin	graphics\wnkpss2.pi1		; <- GRAPHICS: Main demo graphics
+
+senior_fanfare	incbin	sound\senior.thk			; <- MUSIC : Senior Fanfare
+music			incbin	sound\popcorn.thk			; <- MUSIC : Popcorn
+crash_sound		incbin	sound\crash.thk				; <- MUSIC : Crash
 
 end_code
