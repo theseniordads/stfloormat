@@ -29,7 +29,11 @@
  * Exectuable format: Atari TOS .PRG
  * Minimum hardware: Atari STFM with 512K RAM
 
+FINAL_VERSION							; < Comment for labels and faster assembly
+
+ 	IFD	FINAL_VERSION
 	opt	d-
+	ENDC
 
 	include	includes\genmacro.s			; <- General macros (Most of them are not used!)
 
@@ -722,10 +726,12 @@ mince
 update_scroll
 		move.l	(sp),-(sp)
 		move.l	front,a1
+		moveq 	#0,d6				; <- Why are doing this? Wait and see...
 		move.l	#31,d7				; <- for 32 scanlines do....
 lines
 offset	set	152		; maybe 44?	 	; <- Start at the end of the line and work backwards.
-		;move.b	#0,ccr
+		;move.b	#0,ccr				; <- This clears the extension flag, as we don't graphics from the previous scanline to be shifted in!
+		roxl.l	d6					; <- Unfortunately the above line doesn't compile on VASM, so this is our workaround.
 		
 		rept	20					; <- Working backwards for the 20 words in the line...
 		roxl.w	offset(a1)			; <- roxl shifts the bitplane word left, adding any bit shifted out in the previous roxl statement, thus shifting the whole bitplane line 1 pixel to the left as we work backwards.
@@ -764,7 +770,8 @@ calm
 		add.l	d0,d1					; <- Add that to the address of the first character in the font, and now d1 contains the address of the character pointer.
 		move.l	d1,a0
 		move.l	(a0),bitmap_pointer		; <- Store that pointer. (Not sure if we actually need to, given the next step.)
-		
+
+display_char
 		move.l	front,a0
 		move.l	bitmap_pointer,a2
 		
@@ -782,7 +789,7 @@ offset		set	offset+160
 		bra	mince						; <- Return to the main scroller routine. 
 
 ; <- For the space character, we just set the bitmap pointer, and do nothing else, since the character is blank.
-; <- May there was some point where it was planned to have the charaacter scrolled in rather than just plonked 
+; <- Maybe there was some point where it was planned to have the charaacter scrolled in rather than just plonked 
 ; <- onto the screen, but it was never implemented. Who knows?!		
 load_spaces
 		move.l	#space_buffer,bitmap_pointer
@@ -845,11 +852,13 @@ col_list
 	;dc.w	6,5,4,3,2,1,0
 	ENDR
 
+	even
 scrolls_cols_point	dc.l	scrolls_cols_point-4
 
 ; <- This the 32x32 font. We're not sure of source, but it looks like a 
 ; <- one bitplane capture of a font from a Degas PI1 type file, which
 ; <- will explain what we see immediately below.
+	even
 scroll_font	incbin	graphics\myfont.dat
 
 ; <- Yes, this is a list of pointers to every character in the font!
@@ -861,6 +870,7 @@ scroll_font	incbin	graphics\myfont.dat
 ; <- shifed rightwards by one character, then we could just do a simple 
 ; <- calculation in the 'get_new_char' subroutine to get the address of the 
 ; <- character we want in the font.
+	even
 font_pointers
 space		dc.l	scroll_font+36		; points to a space
 a			dc.l	scroll_font
@@ -960,12 +970,16 @@ space_buffer
 		
 sys_pal			incbin	graphics\syspal.dat			; <- Colour values for the default ST Lo res palette
 
+	even
 senior_presents	incbin	graphics\senior.pi1			; <- GRAPHICS: Senior Dads Presents
 intro_pic		incbin	graphics\wnkpss1.pi1		; <- GRAPHICS: Intro Pic
 pic2			incbin	graphics\wnkpss2.pi1		; <- GRAPHICS: Main demo graphics
 
+	even
 senior_fanfare	incbin	sound\senior.thk			; <- MUSIC : Senior Fanfare
+	even
 music			incbin	sound\popcorn.thk			; <- MUSIC : Popcorn
+	even
 crash_sound		incbin	sound\crash.thk				; <- MUSIC : Crash
 
 end_code
