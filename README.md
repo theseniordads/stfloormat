@@ -9,14 +9,26 @@ Full assembler source for the "ST Floormat" demo by The Senior Dads, which was r
 * Devpac 3 to assemble the code.
 * Atomix packer or better to pack the executable.
 
-## How to assemble
+## How to assemble on an Atari
 
 * Load "MAIN.S" into Devpac 3.
 * Make sure settings are set to assemble to Motorola 68000.
 * Assemble to executable file "MAIN.PRG".
 * Rename exectuable to "STFLRMAT.PRG".
-* Pack "STFLRMAT.PRG" with packer.
+* Pack "STFLRMAT.PRG" with packer. (**NOTE**: Atomix packer v3.6 is not compatible with the Atari Falcon.)
 * Run "STFLRMAT.PRG".
+
+## How to assemble on modern systems
+
+This requires [VASM](http://sun.hasenbraten.de/vasm/https:/) and [Vlink](http://www.compilers.de/vlink.html), which you can get for most modern systems.
+
+To compile the source:
+
+`vasmm68k_mot main.s build/main.o -m68000 -Felf -noesc -quiet -no-opt`
+
+To turn the compiled binary to an Atari executable:
+
+`vlink build/main.o build/STFLRMAT.PRG -bataritos`
 
 ## Folders
 
@@ -27,6 +39,7 @@ Full assembler source for the "ST Floormat" demo by The Senior Dads, which was r
   * `SYSPAL.DAT`, a binary which contains the system default colour pallette.
     for ST Lo-res.
 * `INCLUDES` - Various macro and helpers code.
+* `OLD` - Original version of the demo before retrofitting to be a Senior Dads demo. Note that the source code is *not* VASM compatible, and must be compiled in Devpac 3 on an Atari system.
 * `SOUND` - `.THK` files are chip tune music.
   * `SENIOR.THK` - introductory fanfare.
   * `POPCORN.THK` - main music: a "version" of "Popcorn".

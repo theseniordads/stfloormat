@@ -24,7 +24,7 @@
  * preceded by a '<-'.)
 
  * ## Assembly information ##
- * Assembly format: Devpac 3
+ * Assembly format: Devpac 3 (VASM compatible)
  * Target processor: Motorola 68000
  * Exectuable format: Atari TOS .PRG
  * Minimum hardware: Atari STFM with 512K RAM
